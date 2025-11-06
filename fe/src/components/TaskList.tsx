@@ -22,25 +22,18 @@ interface TaskListProps {
   onEdit: (task: Task) => void;
 }
 
-export const TaskList: React.FC<TaskListProps> = ({
-  tasks,
-  onToggle,
-  onDelete,
-  onEdit,
-}) => {
+export const TaskList: React.FC<TaskListProps> = ({ tasks, onToggle, onDelete, onEdit }) => {
   if (tasks.length === 0) {
     return (
       <Paper sx={{ p: 3, textAlign: 'center' }}>
-        <Typography color="text.secondary">
-          Нет задач. Добавьте новую задачу!
-        </Typography>
+        <Typography color="text.secondary">Нет задач. Добавьте новую задачу!</Typography>
       </Paper>
     );
   }
 
   return (
     <List sx={{ width: '100%' }}>
-      {tasks.map((task) => (
+      {tasks.map(task => (
         <Paper key={task.id} sx={{ mb: 1 }}>
           <ListItem
             secondaryAction={
@@ -53,11 +46,7 @@ export const TaskList: React.FC<TaskListProps> = ({
                 >
                   <EditIcon />
                 </IconButton>
-                <IconButton
-                  edge="end"
-                  aria-label="delete"
-                  onClick={() => onDelete(task.id)}
-                >
+                <IconButton edge="end" aria-label="delete" onClick={() => onDelete(task.id)}>
                   <DeleteIcon />
                 </IconButton>
               </Box>
@@ -66,12 +55,7 @@ export const TaskList: React.FC<TaskListProps> = ({
           >
             <ListItemButton onClick={() => onToggle(task.id)} dense>
               <ListItemIcon>
-                <Checkbox
-                  edge="start"
-                  checked={task.completed}
-                  tabIndex={-1}
-                  disableRipple
-                />
+                <Checkbox edge="start" checked={task.completed} tabIndex={-1} disableRipple />
               </ListItemIcon>
               <ListItemText
                 primary={task.title}
@@ -88,4 +72,3 @@ export const TaskList: React.FC<TaskListProps> = ({
     </List>
   );
 };
-

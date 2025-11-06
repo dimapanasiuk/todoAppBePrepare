@@ -13,24 +13,24 @@ export const taskController = {
   getTaskById(req: Request, res: Response): void {
     const { id } = req.params;
     const task = taskModel.findById(id);
-    
+
     if (!task) {
       res.status(404).json({ error: 'Task not found' });
       return;
     }
-    
+
     res.json(task);
   },
 
   // POST /api/tasks - Create new task
   createTask(req: Request, res: Response): void {
     const { title, description }: CreateTaskDto = req.body;
-    
+
     if (!title || title.trim() === '') {
       res.status(400).json({ error: 'Title is required' });
       return;
     }
-    
+
     const newTask = taskModel.create({ title, description });
     res.status(201).json(newTask);
   },
@@ -39,19 +39,19 @@ export const taskController = {
   updateTask(req: Request, res: Response): void {
     const { id } = req.params;
     const { title, description, completed }: UpdateTaskDto = req.body;
-    
+
     if (title !== undefined && title.trim() === '') {
       res.status(400).json({ error: 'Title cannot be empty' });
       return;
     }
-    
+
     const updatedTask = taskModel.update(id, { title, description, completed });
-    
+
     if (!updatedTask) {
       res.status(404).json({ error: 'Task not found' });
       return;
     }
-    
+
     res.json(updatedTask);
   },
 
@@ -59,16 +59,15 @@ export const taskController = {
   deleteTask(req: Request, res: Response): void {
     const { id } = req.params;
     const deletedTask = taskModel.delete(id);
-    
+
     if (!deletedTask) {
       res.status(404).json({ error: 'Task not found' });
       return;
     }
-    
-    res.json({ 
-      message: 'Task deleted successfully', 
-      task: deletedTask 
-    });
-  }
-};
 
+    res.json({
+      message: 'Task deleted successfully',
+       task: deletedTask
+    });
+  },
+};

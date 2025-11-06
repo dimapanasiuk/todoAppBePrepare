@@ -17,12 +17,7 @@ interface TaskFormProps {
   editTask?: Task | null;
 }
 
-export const TaskForm: React.FC<TaskFormProps> = ({
-  open,
-  onClose,
-  onSubmit,
-  editTask,
-}) => {
+export const TaskForm: React.FC<TaskFormProps> = ({ open, onClose, onSubmit, editTask }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -63,9 +58,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <form onSubmit={handleSubmit}>
-        <DialogTitle>
-          {editTask ? 'Редактировать задачу' : 'Новая задача'}
-        </DialogTitle>
+        <DialogTitle>{editTask ? 'Редактировать задачу' : 'Новая задача'}</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
             <TextField
@@ -74,7 +67,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
               fullWidth
               required
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={e => setTitle(e.target.value)}
               disabled={loading}
             />
             <TextField
@@ -83,7 +76,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
               multiline
               rows={3}
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={e => setDescription(e.target.value)}
               disabled={loading}
             />
           </Box>
@@ -100,4 +93,3 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     </Dialog>
   );
 };
-

@@ -7,4 +7,3 @@ export const generateId = (): string => {
 export const resetIdCounter = (): void => {
   nextId = 1;
 };
-

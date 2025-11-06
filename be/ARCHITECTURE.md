@@ -35,6 +35,7 @@ be/src/
 **Назначение:** Определяет API endpoints и связывает их с контроллерами.
 
 **Пример:**
+
 ```typescript
 router.get('/', taskController.getAllTasks);
 router.post('/', taskController.createTask);
@@ -44,22 +45,24 @@ router.post('/', taskController.createTask);
 
 **Файлы:** `controllers/taskController.ts`
 
-**Назначение:** 
+**Назначение:**
+
 - Обрабатывает HTTP запросы
 - Валидирует входные данные
 - Вызывает методы модели
 - Формирует HTTP ответы
 
 **Пример:**
+
 ```typescript
 createTask(req: Request, res: Response): void {
   const { title, description } = req.body;
-  
+
   if (!title || title.trim() === '') {
     res.status(400).json({ error: 'Title is required' });
     return;
   }
-  
+
   const newTask = taskModel.create({ title, description });
   res.status(201).json(newTask);
 }
@@ -70,11 +73,13 @@ createTask(req: Request, res: Response): void {
 **Файлы:** `models/taskModel.ts`
 
 **Назначение:**
+
 - Работа с данными (CRUD операции)
 - Хранение данных в памяти
 - Логика работы с данными
 
 **Методы:**
+
 - `findAll()` - получить все задачи
 - `findById(id)` - получить задачу по ID
 - `create(dto)` - создать задачу
@@ -88,6 +93,7 @@ createTask(req: Request, res: Response): void {
 **Назначение:** TypeScript интерфейсы для типизации данных.
 
 **Типы:**
+
 - `Task` - полная модель задачи
 - `CreateTaskDto` - данные для создания задачи
 - `UpdateTaskDto` - данные для обновления задачи
@@ -171,4 +177,3 @@ createTask(req: Request, res: Response): void {
 1. Добавить зависимость (например, `mongoose` или `pg`)
 2. Создать папку `database/` с конфигурацией подключения
 3. Обновить модели для работы с БД вместо in-memory storage
-

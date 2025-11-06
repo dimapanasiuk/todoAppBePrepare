@@ -3,8 +3,8 @@ export interface Task {
   title: string;
   description?: string;
   completed: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface CreateTaskDto {
@@ -17,3 +17,4 @@ export interface UpdateTaskDto {
   description?: string;
   completed?: boolean;
 }
+

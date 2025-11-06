@@ -17,7 +17,16 @@ import { useTaskStore } from './store/taskStore';
 import { Task } from './types/Task';
 
 function App() {
-  const { tasks, loading, error, fetchTasks, createTask, updateTask, deleteTask, toggleTaskCompletion } = useTaskStore();
+  const {
+    tasks,
+    loading,
+    error,
+    fetchTasks,
+    createTask,
+    updateTask,
+    deleteTask,
+    toggleTaskCompletion,
+  } = useTaskStore();
   const [formOpen, setFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
@@ -111,4 +120,3 @@ function App() {
 }
 
 export default App;
-

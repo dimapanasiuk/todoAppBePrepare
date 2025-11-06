@@ -6,7 +6,7 @@ interface TaskStore {
   tasks: Task[];
   loading: boolean;
   error: string | null;
-  
+
   fetchTasks: () => Promise<void>;
   createTask: (dto: CreateTaskDto) => Promise<void>;
   updateTask: (id: string, dto: UpdateTaskDto) => Promise<void>;
@@ -25,9 +25,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       const tasks = await taskApi.getAllTasks();
       set({ tasks, loading: false });
     } catch (error) {
-      set({ 
+      set({
         error: error instanceof Error ? error.message : 'Failed to fetch tasks',
-        loading: false 
+        loading: false,
       });
     }
   },
@@ -48,7 +48,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     try {
       const updatedTask = await taskApi.updateTask(id, dto);
       set(state => ({
-        tasks: state.tasks.map(task => task.id === id ? updatedTask : task)
+        tasks: state.tasks.map(task => (task.id === id ? updatedTask : task)),
       }));
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Failed to update task' });
@@ -61,7 +61,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     try {
       await taskApi.deleteTask(id);
       set(state => ({
-        tasks: state.tasks.filter(task => task.id !== id)
+        tasks: state.tasks.filter(task => task.id !== id),
       }));
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Failed to delete task' });
@@ -74,6 +74,5 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     if (task) {
       await get().updateTask(id, { completed: !task.completed });
     }
-  }
+  },
 }));
-

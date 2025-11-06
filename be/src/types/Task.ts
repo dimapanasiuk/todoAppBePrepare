@@ -17,4 +17,3 @@ export interface UpdateTaskDto {
   description?: string;
   completed?: boolean;
 }
-

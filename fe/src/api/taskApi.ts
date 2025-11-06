@@ -26,6 +26,5 @@ export const taskApi = {
 
   async deleteTask(id: string): Promise<void> {
     await axios.delete(`${API_BASE_URL}/${id}`);
-  }
+  },
 };
-
