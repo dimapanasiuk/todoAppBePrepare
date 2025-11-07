@@ -1,7 +1,7 @@
 #!/bin/bash
 
-echo "🚀 Starting TODO App Backend"
-echo "============================"
+echo "🚀 Starting TODO App Backend (Development Mode)"
+echo "==============================================="
 echo ""
 
 # Проверка Docker
@@ -16,12 +16,12 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
-# Запуск Redis
-echo "1. Starting Redis..."
-docker-compose -f docker-compose.redis.yml up -d
+# Запуск Redis и MongoDB
+echo "1. Starting Redis & MongoDB..."
+docker-compose -f docker-compose.dev.yml up -d
 
-# Ждем пока Redis запустится
-sleep 3
+# Ждем пока сервисы запустятся
+sleep 5
 
 # Проверка Redis
 echo ""
@@ -33,9 +33,19 @@ else
     exit 1
 fi
 
+# Проверка MongoDB
+echo ""
+echo "3. Checking MongoDB..."
+if docker exec todo-mongodb mongosh --eval "db.runCommand('ping')" --quiet > /dev/null 2>&1; then
+    echo "   ✅ MongoDB is running"
+else
+    echo "   ❌ MongoDB failed to start!"
+    exit 1
+fi
+
 # Установка зависимостей если нужно
 echo ""
-echo "3. Checking dependencies..."
+echo "4. Checking dependencies..."
 
 if [ ! -d "auth/node_modules" ]; then
     echo "   Installing Auth service dependencies..."
@@ -47,15 +57,18 @@ if [ ! -d "todos/node_modules" ]; then
     cd todos && npm install && cd ..
 fi
 
+# Создать директорию для логов если не существует
+mkdir -p logs
+
 echo ""
-echo "============================"
+echo "==============================================="
 echo "✅ Starting services..."
 echo ""
-echo "Auth Service: http://localhost:3001"
-echo "Todos Service: http://localhost:3002"
+echo "Auth Service:  http://localhost:3000"
+echo "Todos Service: http://localhost:3001"
 echo ""
 echo "Press Ctrl+C to stop all services"
-echo "============================"
+echo "==============================================="
 echo ""
 
 # Функция для остановки всех процессов
@@ -63,7 +76,7 @@ cleanup() {
     echo ""
     echo "🛑 Stopping services..."
     kill $AUTH_PID $TODOS_PID 2>/dev/null
-    docker-compose -f docker-compose.redis.yml down
+    docker-compose -f docker-compose.dev.yml down
     echo "✅ All services stopped"
     exit 0
 }

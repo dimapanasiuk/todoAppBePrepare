@@ -5,6 +5,7 @@ import { config } from './config';
 import apiRoutes from './routes';
 import { userModel } from './models/userModel';
 import { connectRedis } from './utils/redis';
+import { connectDB } from './utils/mongodb';
 
 const app = express();
 
@@ -34,31 +35,27 @@ app.use('/api/*', (req, res) => {
 });
 
 // Start server
-app.listen(config.port, async () => {
-  console.log(`🚀 Auth Service is running on http://localhost:${config.port}`);
-  console.log(`🔐 API endpoints available at http://localhost:${config.port}/api/auth`);
-  console.log(`🌍 Environment: ${config.env}`);
-  
-  // Connect to Redis
-  await connectRedis();
-  
-  // Create test user for development
-  if (config.env === 'development') {
-    const testEmail = 'test@example.com';
-    const existingUser = userModel.findByEmail(testEmail);
+const startServer = async () => {
+  try {
+    // Connect to MongoDB
+    await connectDB();
     
-    if (!existingUser) {
-      await userModel.create({
-        email: testEmail,
-        password: 'password123',
-        username: 'Test User'
-      });
-      console.log('👤 Test user created:');
-      console.log('   Email: test@example.com');
-      console.log('   Password: password123');
-    }
+    // Connect to Redis
+    await connectRedis();
+    
+    // Start Express server
+    app.listen(config.port, () => {
+      console.log(`🚀 Auth Service is running on http://localhost:${config.port}`);
+      console.log(`🔐 API endpoints available at http://localhost:${config.port}/api/auth`);
+      console.log(`🌍 Environment: ${config.env}`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
   }
-});
+};
+
+startServer();
 
 export default app;
 

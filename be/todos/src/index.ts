@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import { config } from './config';
 import apiRoutes from './routes';
 import { connectRedis } from './utils/redis';
+import { connectDB } from './utils/mongodb';
 
 const app = express();
 
@@ -33,14 +34,27 @@ app.use('/api/*', (req, res) => {
 });
 
 // Start server
-app.listen(config.port, async () => {
-  console.log(`🚀 Todos Service is running on http://localhost:${config.port}`);
-  console.log(`📝 API endpoints available at http://localhost:${config.port}/api/tasks`);
-  console.log(`🌍 Environment: ${config.env}`);
-  
-  // Connect to Redis
-  await connectRedis();
-});
+const startServer = async () => {
+  try {
+    // Connect to MongoDB
+    await connectDB();
+    
+    // Connect to Redis
+    await connectRedis();
+    
+    // Start Express server
+    app.listen(config.port, () => {
+      console.log(`🚀 Todos Service is running on http://localhost:${config.port}`);
+      console.log(`📝 API endpoints available at http://localhost:${config.port}/api/tasks`);
+      console.log(`🌍 Environment: ${config.env}`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 export default app;
 

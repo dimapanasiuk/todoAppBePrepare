@@ -1,0 +1,116 @@
+# Docker Compose для запуска всех сервисов TODO App
+# Использование: docker-compose up -d
+version: "3.8"
+
+services:
+  # ============================================
+  # Redis - кеширование и blacklist токенов
+  # ============================================
+  redis:
+    image: redis:alpine # Легкий образ Redis на Alpine Linux
+    container_name: todo-redis # Имя контейнера для удобства
+    ports:
+      - "6379:6379" # Проброс порта Redis на хост
+    volumes:
+      - redis-data:/data # Персистентное хранилище данных Redis
+    restart: unless-stopped # Автоматический перезапуск при падении
+    command: redis-server --appendonly yes # AOF для персистентности данных
+    healthcheck: # Проверка здоровья контейнера
+      test: ["CMD", "redis-cli", "ping"] # Команда для проверки
+      interval: 10s # Интервал между проверками
+      timeout: 3s # Таймаут ожидания ответа
+      retries: 5 # Количество попыток перед признанием unhealthy
+    networks:
+      - todo-network # Подключение к общей сети
+
+  # ============================================
+  # MongoDB - основная база данных
+  # ============================================
+  mongodb:
+    image: mongo:7-jammy # MongoDB 7 на Ubuntu Jammy
+    container_name: todo-mongodb # Имя контейнера
+    ports:
+      - "27017:27017" # Проброс порта MongoDB на хост
+    environment: # Переменные окружения для инициализации
+      MONGO_INITDB_ROOT_USERNAME: admin # Логин администратора
+      MONGO_INITDB_ROOT_PASSWORD: admin123 # Пароль администратора (⚠️ изменить в production!)
+      MONGO_INITDB_DATABASE: todoapp # Начальная база данных
+    volumes:
+      - mongodb-data:/data/db # Персистентное хранилище данных
+      - mongodb-config:/data/configdb # Конфигурация MongoDB
+    restart: unless-stopped # Автоматический перезапуск
+    healthcheck: # Проверка здоровья
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s # Проверка каждые 10 секунд
+      timeout: 5s # Таймаут 5 секунд
+      retries: 5 # 5 попыток перед unhealthy
+    networks:
+      - todo-network # Подключение к общей сети
+
+  # ============================================
+  # Auth Service - авторизация и аутентификация
+  # ============================================
+  auth:
+    build:
+      context: ./auth # Директория с исходниками
+      dockerfile: Dockerfile # Dockerfile для сборки образа
+    container_name: todo-auth # Имя контейнера
+    ports:
+      - "3000:3000" # Проброс порта API на хост
+    environment: # Переменные окружения для сервиса
+      - NODE_ENV=production # Режим production
+      - PORT=3000 # Порт сервиса
+      - JWT_SECRET=${JWT_SECRET:-todo-app-secret-key-2025} # JWT секрет (можно переопределить через .env)
+      - JWT_EXPIRES_IN=24h # Срок действия токена
+      - REDIS_URL=redis://redis:6379 # URL Redis (используем имя сервиса)
+      - MONGODB_URI=mongodb://admin:admin123@mongodb:27017 # URI MongoDB
+      - MONGODB_DB_NAME=auth_db # Имя базы данных для пользователей
+    depends_on: # Зависимости - запускаться после
+      redis:
+        condition: service_healthy # Ждать пока Redis станет healthy
+      mongodb:
+        condition: service_healthy # Ждать пока MongoDB станет healthy
+    restart: unless-stopped # Автоматический перезапуск
+    networks:
+      - todo-network # Подключение к общей сети
+
+  # ============================================
+  # Todos Service - управление задачами
+  # ============================================
+  todos:
+    build:
+      context: ./todos # Директория с исходниками
+      dockerfile: Dockerfile # Dockerfile для сборки образа
+    container_name: todo-todos # Имя контейнера
+    ports:
+      - "3001:3001" # Проброс порта API на хост
+    environment: # Переменные окружения
+      - NODE_ENV=production # Режим production
+      - PORT=3001 # Порт сервиса
+      - JWT_SECRET=${JWT_SECRET:-todo-app-secret-key-2025} # JWT секрет (должен совпадать с auth!)
+      - REDIS_URL=redis://redis:6379 # URL Redis для кеширования
+      - MONGODB_URI=mongodb://admin:admin123@mongodb:27017 # URI MongoDB
+      - MONGODB_DB_NAME=todos_db # Имя базы данных для задач
+    depends_on: # Зависимости
+      redis:
+        condition: service_healthy # Ждать Redis
+      mongodb:
+        condition: service_healthy # Ждать MongoDB
+    restart: unless-stopped # Автоматический перезапуск
+    networks:
+      - todo-network # Подключение к общей сети
+
+# ============================================
+# Volumes - персистентное хранилище данных
+# ============================================
+volumes:
+  redis-data: # Данные Redis (кеш, blacklist)
+  mongodb-data: # Данные MongoDB (пользователи, задачи)
+  mongodb-config: # Конфигурация MongoDB
+
+# ============================================
+# Networks - изолированная сеть для сервисов
+# ============================================
+networks:
+  todo-network: # Общая сеть для всех сервисов
+    driver: bridge # Bridge драйвер для изоляции

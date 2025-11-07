@@ -1,53 +1,44 @@
-import bcrypt from 'bcrypt';
-import { User, RegisterDto, UserResponse } from '../types/User';
-import { generateId } from '../utils/generateId';
-import { config } from '../config';
-
-// In-memory storage for users
-let users: User[] = [];
+import { RegisterDto, UserResponse } from '../types/User';
+import { UserModel, IUser } from './User.schema';
 
 export const userModel = {
   // Get all users (for admin purposes)
-  findAll(): UserResponse[] {
+  async findAll(): Promise<UserResponse[]> {
+    const users = await UserModel.find().select('-password').lean();
     return users.map(user => this.toResponse(user));
   },
 
   // Find user by ID
-  findById(id: string): User | undefined {
-    return users.find(user => user.id === id);
+  async findById(id: string): Promise<IUser | null> {
+    return UserModel.findById(id);
   },
 
   // Find user by email
-  findByEmail(email: string): User | undefined {
-    return users.find(user => user.email === email.toLowerCase());
+  async findByEmail(email: string): Promise<IUser | null> {
+    return UserModel.findOne({ email: email.toLowerCase() });
   },
 
   // Create new user
-  async create(dto: RegisterDto): Promise<User> {
-    const hashedPassword = await bcrypt.hash(dto.password, config.bcryptSaltRounds);
-
-    const newUser: User = {
-      id: generateId(),
+  async create(dto: RegisterDto): Promise<IUser> {
+    const newUser = new UserModel({
       email: dto.email.toLowerCase(),
-      password: hashedPassword,
+      password: dto.password, // Будет автоматически захеширован в pre-save hook
       username: dto.username,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    });
 
-    users.push(newUser);
+    await newUser.save();
     return newUser;
   },
 
   // Verify password
-  async verifyPassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
-    return bcrypt.compare(plainPassword, hashedPassword);
+  async verifyPassword(user: IUser, plainPassword: string): Promise<boolean> {
+    return user.comparePassword(plainPassword);
   },
 
   // Convert User to UserResponse (exclude password)
-  toResponse(user: User): UserResponse {
+  toResponse(user: any): UserResponse {
     return {
-      id: user.id,
+      id: user._id.toString(),
       email: user.email,
       username: user.username,
       createdAt: user.createdAt,
@@ -56,8 +47,8 @@ export const userModel = {
   },
 
   // Clear all users (useful for testing)
-  clear(): void {
-    users = [];
+  async clear(): Promise<void> {
+    await UserModel.deleteMany({});
   },
 };
 

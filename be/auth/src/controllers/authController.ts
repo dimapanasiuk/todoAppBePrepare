@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { userModel } from '../models/userModel';
-import { RegisterDto, LoginDto, AuthResponse } from '../types/User';
+import { RegisterDto, LoginDto } from '../types/User';
 import { generateToken } from '../utils/jwt';
 import { config } from '../config';
 import { blacklistToken } from '../utils/redis';
@@ -23,7 +23,7 @@ export const authController = {
       }
 
       // Check if user already exists
-      const existingUser = userModel.findByEmail(email);
+      const existingUser = await userModel.findByEmail(email);
       if (existingUser) {
         res.status(409).json({ error: 'User with this email already exists' });
         return;
@@ -34,7 +34,7 @@ export const authController = {
 
       // Generate JWT token
       const token = generateToken({
-        userId: user.id,
+        userId: (user._id as any).toString(),
         email: user.email,
       });
 
@@ -68,14 +68,14 @@ export const authController = {
       }
 
       // Find user
-      const user = userModel.findByEmail(email);
+      const user = await userModel.findByEmail(email);
       if (!user) {
         res.status(401).json({ error: 'Invalid email or password' });
         return;
       }
 
       // Verify password
-      const isValidPassword = await userModel.verifyPassword(password, user.password);
+      const isValidPassword = await userModel.verifyPassword(user, password);
       if (!isValidPassword) {
         res.status(401).json({ error: 'Invalid email or password' });
         return;
@@ -83,7 +83,7 @@ export const authController = {
 
       // Generate JWT token
       const token = generateToken({
-        userId: user.id,
+        userId: (user._id as any).toString(),
         email: user.email,
       });
 
@@ -106,22 +106,27 @@ export const authController = {
   },
 
   // GET /api/auth/me - Get current user info
-  me(req: Request, res: Response): void {
-    // This assumes we have authentication middleware that sets req.user
-    const userId = (req as any).user?.userId;
+  async me(req: Request, res: Response): Promise<void> {
+    try {
+      // This assumes we have authentication middleware that sets req.user
+      const userId = (req as any).user?.userId;
 
-    if (!userId) {
-      res.status(401).json({ error: 'Unauthorized' });
-      return;
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const user = await userModel.findById(userId);
+      if (!user) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+
+      res.json(userModel.toResponse(user));
+    } catch (error) {
+      console.error('Get user error:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
-
-    const user = userModel.findById(userId);
-    if (!user) {
-      res.status(404).json({ error: 'User not found' });
-      return;
-    }
-
-    res.json(userModel.toResponse(user));
   },
 
   // POST /api/auth/logout - Logout user
@@ -148,6 +153,3 @@ export const authController = {
     }
   },
 };
-
-
-

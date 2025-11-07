@@ -1,0 +1,61 @@
+# Docker Compose для разработки - только базы данных
+# Сервисы (auth, todos) запускаются локально через npm run dev
+# Использование: docker-compose -f docker-compose.dev.yml up -d
+version: "3.8"
+
+services:
+  # ============================================
+  # Redis - кеширование и blacklist токенов
+  # ============================================
+  redis:
+    image: redis:alpine # Легкий образ Redis на Alpine Linux
+    container_name: todo-redis # Имя контейнера для удобства
+    ports:
+      - "6379:6379" # Проброс порта на localhost:6379
+    volumes:
+      - redis-data:/data # Персистентное хранилище данных
+    restart: unless-stopped # Автоматический перезапуск при падении
+    command: redis-server --appendonly yes # AOF (Append Only File) для сохранения данных
+    healthcheck: # Проверка здоровья контейнера
+      test: ["CMD", "redis-cli", "ping"] # Команда проверки (должна вернуть PONG)
+      interval: 10s # Проверка каждые 10 секунд
+      timeout: 3s # Таймаут ожидания ответа
+      retries: 5 # Количество попыток перед unhealthy
+
+  # ============================================
+  # MongoDB - основная база данных
+  # ============================================
+  mongodb:
+    image: mongo:7-jammy # MongoDB 7 на Ubuntu Jammy
+    container_name: todo-mongodb # Имя контейнера
+    ports:
+      - "27017:27017" # Проброс порта на localhost:27017
+    environment: # Переменные окружения для инициализации
+      MONGO_INITDB_ROOT_USERNAME: admin # Логин администратора
+      MONGO_INITDB_ROOT_PASSWORD: admin123 # Пароль администратора
+      MONGO_INITDB_DATABASE: todoapp # Начальная база данных (создается автоматически)
+    volumes:
+      - mongodb-data:/data/db # Персистентное хранилище данных MongoDB
+      - mongodb-config:/data/configdb # Конфигурационные файлы MongoDB
+    restart: unless-stopped # Автоматический перезапуск при падении
+    healthcheck: # Проверка здоровья
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s # Проверка каждые 10 секунд
+      timeout: 5s # Таймаут 5 секунд
+      retries: 5 # 5 попыток перед unhealthy
+
+# ============================================
+# Volumes - персистентное хранилище данных
+# Данные сохраняются между перезапусками
+# ============================================
+volumes:
+  redis-data: # Данные Redis (кеш, blacklist токенов)
+  mongodb-data: # Данные MongoDB (пользователи, задачи)
+  mongodb-config: # Конфигурация MongoDB
+
+# ============================================
+# Примечания:
+# - Сервисы auth и todos запускаются отдельно через npm run dev
+# - Они подключаются к Redis и MongoDB через localhost:6379 и localhost:27017
+# - Для полного запуска используйте: npm run start:all
+# ============================================
