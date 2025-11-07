@@ -6,8 +6,14 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': {
+      // Auth Service
+      '/api/auth': {
         target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      // Todos Service
+      '/api/tasks': {
+        target: 'http://localhost:3001',
         changeOrigin: true,
       }
     }

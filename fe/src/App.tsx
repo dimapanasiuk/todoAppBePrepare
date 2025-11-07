@@ -9,11 +9,16 @@ import {
   AppBar,
   Toolbar,
   Fab,
+  IconButton,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import LogoutIcon from '@mui/icons-material/Logout';
 import { TaskList } from './components/TaskList';
 import { TaskForm } from './components/TaskForm';
+import { LoginForm } from './components/LoginForm';
+import { RegisterForm } from './components/RegisterForm';
 import { useTaskStore } from './store/taskStore';
+import { useAuthStore } from './store/authStore';
 import { Task } from './types/Task';
 
 function App() {
@@ -27,12 +32,22 @@ function App() {
     deleteTask,
     toggleTaskCompletion,
   } = useTaskStore();
+  
+  const { user, isAuthenticated, logout, checkAuth } = useAuthStore();
+  
   const [formOpen, setFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [showRegister, setShowRegister] = useState(false);
 
   useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
+    checkAuth();
+  }, [checkAuth]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchTasks();
+    }
+  }, [isAuthenticated, fetchTasks]);
 
   const handleCreateTask = async (dto: { title: string; description?: string }) => {
     await createTask(dto);
@@ -55,6 +70,36 @@ function App() {
     setEditingTask(null);
   };
 
+  const handleLogout = () => {
+    logout();
+    setFormOpen(false);
+    setEditingTask(null);
+  };
+
+  // Show auth forms if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#f5f5f5' }}>
+        <AppBar position="static">
+          <Toolbar>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              Todo App
+            </Typography>
+          </Toolbar>
+        </AppBar>
+
+        <Container maxWidth="sm">
+          {showRegister ? (
+            <RegisterForm onSwitchToLogin={() => setShowRegister(false)} />
+          ) : (
+            <LoginForm onSwitchToRegister={() => setShowRegister(true)} />
+          )}
+        </Container>
+      </Box>
+    );
+  }
+
+  // Show tasks if authenticated
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <AppBar position="static">
@@ -62,6 +107,12 @@ function App() {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Todo App
           </Typography>
+          <Typography variant="body1" sx={{ mr: 2 }}>
+            {user?.username}
+          </Typography>
+          <IconButton color="inherit" onClick={handleLogout} title="Выйти">
+            <LogoutIcon />
+          </IconButton>
         </Toolbar>
       </AppBar>
 
