@@ -3,6 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { config } from './config';
 import apiRoutes from './routes';
+import { connectRedis } from './utils/redis';
 
 const app = express();
 
@@ -32,10 +33,13 @@ app.use('/api/*', (req, res) => {
 });
 
 // Start server
-app.listen(config.port, () => {
+app.listen(config.port, async () => {
   console.log(`🚀 Todos Service is running on http://localhost:${config.port}`);
   console.log(`📝 API endpoints available at http://localhost:${config.port}/api/tasks`);
   console.log(`🌍 Environment: ${config.env}`);
+  
+  // Connect to Redis
+  await connectRedis();
 });
 
 export default app;

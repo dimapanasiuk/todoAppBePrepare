@@ -24,9 +24,21 @@ be/
 
 ## 🚀 Быстрый старт
 
+### 1. Запуск Redis (обязательно!)
+
+```bash
+# Docker (рекомендуется)
+docker-compose -f docker-compose.redis.yml up -d
+
+# Или напрямую
+docker run -d -p 6379:6379 --name redis redis:alpine
+```
+
+### 2. Запуск микросервисов
+
 Каждый микросервис запускается независимо. Откройте два терминала:
 
-### Терминал 1 - Auth Service
+#### Терминал 1 - Auth Service
 
 ```bash
 cd auth
@@ -34,13 +46,15 @@ npm install
 npm run dev
 ```
 
-### Терминал 2 - Todos Service
+#### Терминал 2 - Todos Service
 
 ```bash
 cd todos
 npm install
 npm run dev
 ```
+
+📖 **Подробнее о Redis**: см. [REDIS_QUICKSTART.md](./REDIS_QUICKSTART.md)
 
 ## 🌐 Endpoints
 
@@ -174,6 +188,34 @@ curl http://localhost:3001/api/tasks
    - Todos Service может проверять токен через Auth Service
    - Или использовать shared middleware для проверки JWT
 
+## 🚀 Redis Features
+
+### ✅ Реализовано
+
+- ✅ **Token Blacklist** - при logout токен блокируется на 24 часа
+- ✅ **Todos Caching** - список задач кешируется на 5 минут
+- ✅ **Auto Cache Update** - кеш автоматически обновляется при изменении данных
+- ✅ **Shared State** - оба сервиса используют один Redis
+
+### Как это работает
+
+**Token Blacklist (Auth Service):**
+
+```
+1. User logout → Token добавляется в Redis blacklist
+2. Следующий запрос → Middleware проверяет blacklist
+3. Если токен в blacklist → 401 Unauthorized
+```
+
+**Todos Caching (Todos Service):**
+
+```
+1. GET /api/tasks → Проверяет Redis кеш
+2. Если есть в кеше → Возвращает из Redis (быстро!)
+3. Если нет → Получает из БД → Сохраняет в Redis
+4. CREATE/UPDATE/DELETE → Инвалидирует кеш
+```
+
 ## 🔐 Безопасность
 
 ### ✅ Реализовано
@@ -182,6 +224,7 @@ curl http://localhost:3001/api/tasks
 - ✅ **HttpOnly cookies** - токен недоступен для JavaScript (защита от XSS)
 - ✅ **SameSite=lax** - базовая защита от CSRF атак
 - ✅ **Secure flag** в production - cookie только через HTTPS
+- ✅ **Token Blacklist** - отозванные токены не работают
 - ✅ Todos Service проверяет JWT токен перед каждым запросом
 - ✅ Изоляция задач - каждый пользователь видит только свои задачи
 - ✅ Logout работает корректно - cookie удаляется на сервере
@@ -213,7 +256,7 @@ JWT_SECRET=ваш-секретный-ключ-123456
 ### Будущие улучшения
 
 - [ ] Refresh tokens
-- [ ] Token blacklist/revocation
+- [x] **Token blacklist/revocation** - реализовано через Redis ✅
 - [ ] Rate limiting
 - [ ] API Gateway для единой точки входа
 - [ ] HTTPS в production
@@ -224,6 +267,8 @@ JWT_SECRET=ваш-секретный-ключ-123456
 - [AUTH_ARCHITECTURE.md](./AUTH_ARCHITECTURE.md) - Как работает авторизация (JWT + httpOnly cookies)
 - [COOKIE_AUTH_SETUP.md](./COOKIE_AUTH_SETUP.md) - Инструкция по запуску с cookie-based auth
 - [MIGRATION_TO_COOKIES.md](./MIGRATION_TO_COOKIES.md) - Что изменилось при переходе на cookies
+- [REDIS_QUICKSTART.md](./REDIS_QUICKSTART.md) - 🚀 Быстрый старт с Redis
+- [REDIS_SETUP.md](./REDIS_SETUP.md) - Детальная документация Redis интеграции
 - [auth/README.md](./auth/README.md) - Документация Auth Service
 - [todos/README.md](./todos/README.md) - Документация Todos Service
 
@@ -237,6 +282,7 @@ JWT_SECRET=ваш-секретный-ключ-123456
 
 ### Phase 2: Infrastructure
 
+- [x] **Redis интеграция** - кеширование и blacklist токенов ✅
 - [ ] Docker Compose для запуска всех сервисов
 - [ ] API Gateway (Kong, Express Gateway)
 - [ ] Service Discovery
@@ -244,7 +290,6 @@ JWT_SECRET=ваш-секретный-ключ-123456
 ### Phase 3: Production Ready
 
 - [ ] База данных (PostgreSQL/MongoDB)
-- [ ] Кеширование (Redis)
 - [ ] Логирование (Winston, ELK)
 - [ ] Мониторинг (Prometheus, Grafana)
 - [ ] CI/CD

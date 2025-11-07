@@ -3,6 +3,7 @@ import { userModel } from '../models/userModel';
 import { RegisterDto, LoginDto, AuthResponse } from '../types/User';
 import { generateToken } from '../utils/jwt';
 import { config } from '../config';
+import { blacklistToken } from '../utils/redis';
 
 export const authController = {
   // POST /api/auth/register - Register new user
@@ -124,15 +125,27 @@ export const authController = {
   },
 
   // POST /api/auth/logout - Logout user
-  logout(req: Request, res: Response): void {
-    // Clear the httpOnly cookie
-    res.clearCookie('token', {
-      httpOnly: true,
-      secure: config.env === 'production',
-      sameSite: 'lax',
-    });
+  async logout(req: Request, res: Response): Promise<void> {
+    try {
+      const token = req.cookies?.token;
 
-    res.json({ message: 'Logged out successfully' });
+      // Добавляем токен в blacklist если он есть
+      if (token) {
+        await blacklistToken(token, 86400); // 24 часа
+      }
+
+      // Clear the httpOnly cookie
+      res.clearCookie('token', {
+        httpOnly: true,
+        secure: config.env === 'production',
+        sameSite: 'lax',
+      });
+
+      res.json({ message: 'Logged out successfully' });
+    } catch (error) {
+      console.error('Logout error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   },
 };
 

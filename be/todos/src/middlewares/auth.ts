@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/jwt';
+import { isTokenBlacklisted } from '../utils/redis';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -8,11 +9,11 @@ export interface AuthRequest extends Request {
   };
 }
 
-export const authMiddleware = (
+export const authMiddleware = async (
   req: Request,
   res: Response,
   next: NextFunction
-): void => {
+): Promise<void> => {
   try {
     // Get token from cookie
     const token = req.cookies?.token;
@@ -21,6 +22,13 @@ export const authMiddleware = (
 
     if (!token) {
       res.status(401).json({ error: 'No token provided' });
+      return;
+    }
+
+    // Проверка blacklist
+    const isBlacklisted = await isTokenBlacklisted(token);
+    if (isBlacklisted) {
+      res.status(401).json({ error: 'Token has been revoked' });
       return;
     }
 

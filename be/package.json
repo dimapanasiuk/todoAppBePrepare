@@ -4,6 +4,7 @@
   "description": "Backend microservices monorepo",
   "private": true,
   "scripts": {
+    "start:all": "./start-all.sh",
     "dev": "npm run dev:auth & npm run dev:todos",
     "dev:auth": "cd auth && npm run dev",
     "dev:todos": "cd todos && npm run dev",

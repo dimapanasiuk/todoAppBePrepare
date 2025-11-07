@@ -2,10 +2,11 @@ import { Request, Response } from 'express';
 import { taskModel } from '../models/taskModel';
 import { CreateTaskDto, UpdateTaskDto } from '../types/Task';
 import { AuthRequest } from '../middlewares/auth';
+import { getCachedTodos, cacheTodos } from '../utils/redis';
 
 export const taskController = {
   // GET /api/tasks - Get all tasks for current user
-  getAllTasks(req: Request, res: Response): void {
+  async getAllTasks(req: Request, res: Response): Promise<void> {
     const userId = (req as AuthRequest).user?.userId;
 
     if (!userId) {
@@ -13,7 +14,20 @@ export const taskController = {
       return;
     }
 
+    // Проверяем кеш
+    const cachedTasks = await getCachedTodos(userId);
+    if (cachedTasks) {
+      console.log('📦 Returning cached todos for user:', userId);
+      res.json(cachedTasks);
+      return;
+    }
+
+    // Если нет в кеше, получаем из БД
     const tasks = taskModel.findAllByUserId(userId);
+    
+    // Сохраняем в кеш
+    await cacheTodos(userId, tasks);
+    
     res.json(tasks);
   },
 
@@ -38,7 +52,7 @@ export const taskController = {
   },
 
   // POST /api/tasks - Create new task for current user
-  createTask(req: Request, res: Response): void {
+  async createTask(req: Request, res: Response): Promise<void> {
     const userId = (req as AuthRequest).user?.userId;
 
     if (!userId) {
@@ -54,11 +68,17 @@ export const taskController = {
     }
 
     const newTask = taskModel.create({ title, description }, userId);
+    
+    // Обновляем кеш свежими данными
+    const allTasks = taskModel.findAllByUserId(userId);
+    await cacheTodos(userId, allTasks);
+    console.log('🔄 Cache updated after creating task');
+    
     res.status(201).json(newTask);
   },
 
   // PUT /api/tasks/:id - Update task (only if belongs to user)
-  updateTask(req: Request, res: Response): void {
+  async updateTask(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const userId = (req as AuthRequest).user?.userId;
 
@@ -81,11 +101,16 @@ export const taskController = {
       return;
     }
 
+    // Обновляем кеш свежими данными
+    const allTasks = taskModel.findAllByUserId(userId);
+    await cacheTodos(userId, allTasks);
+    console.log('🔄 Cache updated after updating task');
+
     res.json(updatedTask);
   },
 
   // DELETE /api/tasks/:id - Delete task (only if belongs to user)
-  deleteTask(req: Request, res: Response): void {
+  async deleteTask(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const userId = (req as AuthRequest).user?.userId;
 
@@ -100,6 +125,11 @@ export const taskController = {
       res.status(404).json({ error: 'Task not found' });
       return;
     }
+
+    // Обновляем кеш свежими данными
+    const allTasks = taskModel.findAllByUserId(userId);
+    await cacheTodos(userId, allTasks);
+    console.log('🔄 Cache updated after deleting task');
 
     res.json({
       message: 'Task deleted successfully',
