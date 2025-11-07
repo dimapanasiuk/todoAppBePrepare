@@ -1,35 +1,39 @@
 {
-  "name": "todo-app",
+  "name": "backend-monorepo",
   "version": "1.0.0",
-  "description": "Simple TODO list application with CRUD operations",
-  "main": "dist/index.js",
+  "description": "Backend microservices monorepo",
+  "private": true,
   "scripts": {
-    "dev": "ts-node src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "lint": "eslint . --ext .ts --report-unused-disable-directives --max-warnings 0",
-    "lint:fix": "eslint . --ext .ts --fix",
-    "format": "prettier --write \"src/**/*.{ts,json,md}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,json,md}\""
+    "dev": "npm run dev:auth & npm run dev:todos",
+    "dev:auth": "cd auth && npm run dev",
+    "dev:todos": "cd todos && npm run dev",
+    "build": "npm run build:auth && npm run build:todos",
+    "build:auth": "cd auth && npm run build",
+    "build:todos": "cd todos && npm run build",
+    "start": "npm run start:auth & npm run start:todos",
+    "start:auth": "cd auth && npm run start",
+    "start:todos": "cd todos && npm run start",
+    "install:all": "npm run install:auth && npm run install:todos",
+    "install:auth": "cd auth && npm install",
+    "install:todos": "cd todos && npm install",
+    "lint": "npm run lint:auth && npm run lint:todos",
+    "lint:auth": "cd auth && npm run lint",
+    "lint:todos": "cd todos && npm run lint",
+    "lint:fix": "npm run lint:fix:auth && npm run lint:fix:todos",
+    "lint:fix:auth": "cd auth && npm run lint:fix",
+    "lint:fix:todos": "cd todos && npm run lint:fix",
+    "format": "npm run format:auth && npm run format:todos",
+    "format:auth": "cd auth && npm run format",
+    "format:todos": "cd todos && npm run format",
+    "format:check": "npm run format:check:auth && npm run format:check:todos",
+    "format:check:auth": "cd auth && npm run format:check",
+    "format:check:todos": "cd todos && npm run format:check"
   },
-  "keywords": ["todo", "express", "typescript"],
+  "keywords": [
+    "microservices",
+    "backend",
+    "monorepo"
+  ],
   "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5"
-  },
-  "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/node": "^20.10.0",
-    "@types/cors": "^2.8.17",
-    "@typescript-eslint/eslint-plugin": "^6.14.0",
-    "@typescript-eslint/parser": "^6.14.0",
-    "eslint": "^8.55.0",
-    "eslint-config-prettier": "^9.1.0",
-    "prettier": "^3.1.0",
-    "typescript": "^5.3.3",
-    "ts-node": "^10.9.2"
-  }
+  "license": "ISC"
 }
-
